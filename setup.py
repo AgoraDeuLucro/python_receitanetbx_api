@@ -3,14 +3,14 @@ from setuptools import setup
 with open("README.md", "r") as arq:
     readme = arq.read()
 
-setup(name='py_bling',
-    version='0.0.6',
+setup(name='py_receitanetbx',
+    version='0.0.1',
     license='MIT License',
     author='Yuri Gomes',
     long_description=readme,
     long_description_content_type="text/markdown",
     author_email='yurialdegomes@gmail.com',
-    keywords='bling',
-    description=u'Wrapper não oficial do Bling',
-    packages=['py_bling'],
+    keywords='receitanetbx receita federal sped efd ecf soap',
+    description=u'Wrapper não oficial do ReceitanetBX (Receita Federal)',
+    packages=['py_receitanetbx'],
     install_requires=['requests'],)

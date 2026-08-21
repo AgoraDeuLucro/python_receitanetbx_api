@@ -3,3 +3,6 @@ tests/
 *test*
 *.pyc
 .directory
+receitanetbx-cli-referencia.md
+ReceitanetBX.xml
+/rpa_receitabx_api

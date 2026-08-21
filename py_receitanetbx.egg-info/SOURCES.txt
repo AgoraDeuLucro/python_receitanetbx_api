@@ -1,0 +1,10 @@
+LICENSE
+README.md
+setup.py
+py_receitanetbx/__init__.py
+py_receitanetbx/wrapper.py
+py_receitanetbx.egg-info/PKG-INFO
+py_receitanetbx.egg-info/SOURCES.txt
+py_receitanetbx.egg-info/dependency_links.txt
+py_receitanetbx.egg-info/requires.txt
+py_receitanetbx.egg-info/top_level.txt

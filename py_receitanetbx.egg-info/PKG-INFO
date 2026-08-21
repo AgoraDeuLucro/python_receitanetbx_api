@@ -1,3 +1,24 @@
+Metadata-Version: 2.4
+Name: py_receitanetbx
+Version: 0.0.1
+Summary: Wrapper não oficial do ReceitanetBX (Receita Federal)
+Author: Yuri Gomes
+Author-email: yurialdegomes@gmail.com
+License: MIT License
+Keywords: receitanetbx receita federal sped efd ecf soap
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests
+Dynamic: author
+Dynamic: author-email
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: keywords
+Dynamic: license
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: summary
+
 # python_receitanetbx_api
  
 # Material de apoio
