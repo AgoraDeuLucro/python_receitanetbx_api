@@ -6,6 +6,7 @@ Fluxo típico::
     from py_receitanetbx import arquivos, pedidos, SISTEMAS
 
     arq = arquivos()  # http://localhost:2443/services/ReceitanetBX
+    # arq = arquivos(debug=True)  # imprime request/response no terminal
 
     # 1) Pesquisar — retorna IDs dos arquivos encontrados
     r = arq.pesquisar(sistema=2, inicio="2026-03-01", fim="2026-03-31")
@@ -133,10 +134,18 @@ class cliente:
     _SOAP_NS = "http://ws.apache.org/axis2"
     _SOAPENV_NS = "http://schemas.xmlsoap.org/soap/envelope/"
 
-    def __init__(self, host="localhost", port=2443, timeout=120, print_error=True):
+    def __init__(
+        self,
+        host="localhost",
+        port=2443,
+        timeout=120,
+        print_error=True,
+        debug=False,
+    ):
         self.endpoint = f"http://{host}:{port}/services/ReceitanetBX"
         self.timeout = timeout
         self.print_error = print_error
+        self.debug = debug
 
     def _build_envelope(self, operation, entrada):
         """Monta o envelope SOAP 1.1 com entrada em CDATA (formato real do WS)."""
@@ -152,6 +161,36 @@ class cliente:
             "</soapenv:Body>"
             "</soapenv:Envelope>"
         )
+
+    def _print_debug_request(self, method, url, headers, body):
+        sep = "=" * 72
+        print(sep)
+        print(f"[DEBUG] REQUEST")
+        print(sep)
+        print(f"{method} {url}")
+        print()
+        print("Headers:")
+        for key, value in headers.items():
+            print(f"  {key}: {value}")
+        print()
+        print("Body:")
+        print(body)
+        print(sep)
+
+    def _print_debug_response(self, response):
+        sep = "=" * 72
+        print(sep)
+        print(f"[DEBUG] RESPONSE")
+        print(sep)
+        print(f"HTTP {response.status_code} {response.reason}")
+        print()
+        print("Headers:")
+        for key, value in response.headers.items():
+            print(f"  {key}: {value}")
+        print()
+        print("Body:")
+        print(response.text)
+        print(sep)
 
     def _parse_response(self, xml_text):
         """Extrai (retorno, saida) do XML de resposta SOAP."""
@@ -208,6 +247,9 @@ class cliente:
             "SOAPAction": f'"urn:{operation}"',
         }
 
+        if self.debug:
+            self._print_debug_request("POST", self.endpoint, headers, envelope)
+
         try:
             response = requests.post(
                 self.endpoint,
@@ -227,6 +269,9 @@ class cliente:
             if self.print_error:
                 print(f"Erro na requisição SOAP {operation}: {e}")
             return {}
+
+        if self.debug:
+            self._print_debug_response(response)
 
         if response.status_code != 200:
             if self.print_error:
