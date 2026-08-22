@@ -5656,6 +5656,51 @@ def _pares_periodo(campos):
     return None, None
 
 
+def _opcoes_lista(listas_validas):
+    """Extrai códigos válidos de ``listas_validas`` (ex.: ``1=CNPJ|2=CPF``).
+
+    Retorna ``None`` quando não há enum (campo livre / máscara).
+    """
+    if not listas_validas:
+        return None
+    text = str(listas_validas).strip()
+    if not text:
+        return None
+    lower = text.lower()
+    if lower.startswith("máscara") or lower.startswith("mascara"):
+        return None
+    opcoes = set()
+    for part in text.split("|"):
+        part = part.strip()
+        if not part:
+            continue
+        if "(" in part:
+            part = part.split("(", 1)[0].strip()
+        key = part.split("=", 1)[0].strip()
+        if key:
+            opcoes.add(key)
+    return opcoes or None
+
+
+def _valor_lista_ok(valor, listas_validas):
+    """True se valor é aceito pela lista (ou se não há lista restritiva)."""
+    opcoes = _opcoes_lista(listas_validas)
+    if opcoes is None:
+        return True
+    return str(valor) in opcoes
+
+
+def _resolver_chave_campo(schema, chave):
+    """Aceita id do campo (``4``) ou nome oficial (``Tipo NI do Contribuinte``)."""
+    k = str(chave)
+    if k in schema:
+        return k
+    for cid, meta in schema.items():
+        if (meta.get("nome") or "") == k:
+            return cid
+    return k
+
+
 def _montar_valores_campos(
     sistema,
     tipoarquivo,
@@ -5665,13 +5710,18 @@ def _montar_valores_campos(
     campos=None,
     validar=True,
 ):
-    """Monta dict nome->valor para a pesquisa, mapeando inicio/fim e defaults."""
+    """Monta dict nome->valor para a pesquisa, mapeando inicio/fim e defaults.
+
+    Defaults do Derby com placeholder inválido (ex.: ``0`` fora de
+    ``listas_validas``) **não** são enviados — o CSV usa ``0`` só como
+    “não selecionado” na UI, não como valor SOAP.
+    """
     schema = campos_da_pesquisa(sistema, tipoarquivo, tipopesquisa)
     valores = {}
     if campos:
         for k, v in campos.items():
             if v is not None:
-                valores[str(k)] = v
+                valores[_resolver_chave_campo(schema, k)] = v
 
     id_ini, id_fim = _pares_periodo(schema)
 
@@ -5702,10 +5752,13 @@ def _montar_valores_campos(
         else:
             valores.setdefault("dataFim", _normalize_date(fim, end=True))
 
-    # defaults do schema
+    # defaults do schema — só se forem valores válidos na lista
     for cid, meta in schema.items():
-        if cid not in valores and meta.get("default") is not None:
-            valores[cid] = meta["default"]
+        if cid in valores or meta.get("default") is None:
+            continue
+        default = meta["default"]
+        if _valor_lista_ok(default, meta.get("listas_validas")):
+            valores[cid] = default
 
     if validar and schema:
         desconhecidos = [k for k in valores if k not in schema]
@@ -5714,6 +5767,17 @@ def _montar_valores_campos(
                 f"Campos inválidos para sistema={sistema} tipo={tipoarquivo!r} "
                 f"pesquisa={tipopesquisa!r}: {desconhecidos}. "
                 f"Esperados: {list(schema)}"
+            )
+        invalidos = [
+            f"{cid}={valores[cid]!r} (válidos: {meta.get('listas_validas')})"
+            for cid, meta in schema.items()
+            if cid in valores
+            and not _valor_lista_ok(valores[cid], meta.get("listas_validas"))
+        ]
+        if invalidos:
+            raise ValueError(
+                f"Valores fora de listas_validas para sistema={sistema} "
+                f"tipo={tipoarquivo!r} pesquisa={tipopesquisa!r}: {invalidos}"
             )
         faltando = [
             cid
